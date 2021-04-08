@@ -85,12 +85,18 @@ object Build : BuildType({
             groupCheckinsByCommitter = true
         }
     }
-    features { swabra {  } }
 })
 
 object Publish: BuildType({
     name = "Publish"
     artifactRules = "application.zip"
+    vcs {
+        branchFilter = """
+            +:*
+            -:<default>
+        """
+        root(PetclinicVcs)
+    }
     steps {
         script {
             println("Publish step content")

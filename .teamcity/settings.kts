@@ -2,6 +2,7 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.swabra
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.MavenBuildStep
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.maven
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
 import jetbrains.buildServer.configs.kotlin.v2019_2.vcs.GitVcsRoot
 
@@ -34,6 +35,15 @@ project {
     buildType(wrapWithFeature(Build) {
         swabra {}
         })
+    buildType(Publish)
+
+    sequential {
+        buildType(wrapWithFeature(Build) {
+            swabra {}
+        })
+        buildType(Publish)
+    }
+
 }
 
 object Build : BuildType({
@@ -52,6 +62,12 @@ object Build : BuildType({
             goals = "clean package"
             localRepoScope = MavenBuildStep.RepositoryScope.MAVEN_DEFAULT
         }
+        script {
+            println("Renaming artifact")
+            println("Base dir ${DslContext.baseDir}")
+            println("Settings root ${DslContext.settingsRoot}")
+            scriptContent = ""
+        }
 
     }
     triggers {
@@ -60,6 +76,35 @@ object Build : BuildType({
         }
     }
     features { swabra {  } }
+})
+
+object Publish: BuildType({
+  name = "Publish"
+  artifactRules = "application.zip"
+    steps {
+        script {
+            println("Publish step content")
+            scriptContent = """
+                
+                BRANCH=`echo %teamcity.build.branch% | sed 's|refs/heads/||g'`
+                BUILD_NO="%build.counter%"
+                
+                echo "Build is running on branch                 ${'$'}                BRANCH"
+                echo "Build count is currently at                 ${'$'}                BUILD_NO"
+                
+                mkdir -p ./artifacts/
+                find -name 'target' -type d | xargs -I{} find {} -name "*.jar" | xargs -I{} 
+                cp {} ./artifacts/
+                ls -lah artifacts/
+            """.trimIndent()
+        }
+    }
+    dependencies {
+        snapshot(Build) {}
+        artifacts(Build) {
+            artifactRules = "application.zip"
+        }
+    }
 })
 
 object PetclinicVcs : GitVcsRoot({

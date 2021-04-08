@@ -47,7 +47,7 @@ object Build : BuildType({
     steps {
         maven {
             goals = "clean package"
-            dockerImage = "maven:3.6.0-jdk-8"
+//            dockerImage = "maven:3.6.0-jdk-8"
         }
 
     }

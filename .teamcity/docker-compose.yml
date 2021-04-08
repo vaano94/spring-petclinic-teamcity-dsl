@@ -35,6 +35,7 @@ services:
     image: jetbrains/teamcity-agent
     restart: always
     privileged: true
+    user: root
     volumes:
       - /Users/ivan.kravchenko/teamcity/data/teamcity_agent/conf:/data/teamcity_agent/conf
     environment:

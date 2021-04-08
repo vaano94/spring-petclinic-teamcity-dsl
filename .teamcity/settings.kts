@@ -76,7 +76,7 @@ object Build : BuildType({
             println("Renaming artifact")
             println("Base dir ${DslContext.baseDir}")
             println("Settings root ${DslContext.settingsRoot}")
-            scriptContent = ""
+            scriptContent = "echo 'Script content' "
         }
 
     }

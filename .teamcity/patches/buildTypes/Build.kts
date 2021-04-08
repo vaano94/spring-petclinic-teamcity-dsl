@@ -19,7 +19,7 @@ changeBuildType(RelativeId("Build")) {
         }
         branchFilter = """
             +:*
-            -:<default>
+            +:<default>
         """.trimIndent()
     }
 }

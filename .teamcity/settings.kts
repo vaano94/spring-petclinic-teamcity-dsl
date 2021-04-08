@@ -1,6 +1,8 @@
 import jetbrains.buildServer.configs.kotlin.v2019_2.*
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.swabra
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.MavenBuildStep
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.maven
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.v2019_2.projectFeatures.githubConnection
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
 import jetbrains.buildServer.configs.kotlin.v2019_2.vcs.GitVcsRoot
@@ -27,13 +29,21 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 'Debug' option is available in the context menu for the task.
 */
 
-version = "2020.2"
+version = "2019.2"
 
 project {
-
     vcsRoot(PetclinicVcs)
+    buildType(wrapWithFeature(Build) {
+        swabra {}
+    })
+    buildType(Publish)
 
-    buildType(Build)
+    sequential {
+        buildType(wrapWithFeature(Build) {
+            swabra {}
+        })
+        buildType(Publish)
+    }
 
     features {
         githubConnection {
@@ -43,27 +53,66 @@ project {
             clientSecret = "credentialsJSON:5af32dee-9400-4397-84f1-a65064b8d0ec"
         }
     }
+
 }
 
 object Build : BuildType({
     name = "Build"
-
     artifactRules = "target/*jar"
 
     vcs {
+        branchFilter = """
+            +:*
+            -:<default>
+        """
         root(PetclinicVcs)
     }
-
     steps {
         maven {
             goals = "clean package"
             localRepoScope = MavenBuildStep.RepositoryScope.MAVEN_DEFAULT
         }
-    }
+        script {
+            println("Renaming artifact")
+            println("Base dir ${DslContext.baseDir}")
+            println("Settings root ${DslContext.settingsRoot}")
+            scriptContent = ""
+        }
 
+    }
     triggers {
         vcs {
             groupCheckinsByCommitter = true
+        }
+    }
+    features { swabra {  } }
+})
+
+object Publish: BuildType({
+    name = "Publish"
+    artifactRules = "application.zip"
+    steps {
+        script {
+            println("Publish step content")
+            scriptContent = """
+                
+                BRANCH=`echo %teamcity.build.branch% | sed 's|refs/heads/||g'`
+                BUILD_NO="%build.counter%"
+                
+                echo "Build is running on branch                 ${'$'}                BRANCH"
+                echo "Build count is currently at                 ${'$'}                BUILD_NO"
+                
+                mkdir -p ./artifacts/
+                find -name 'target' -type d | xargs -I{} find {} -name "*.jar" | xargs -I{} 
+                cp {} ./artifacts/
+                ls -lah artifacts/
+            """.trimIndent()
+        }
+    }
+    dependencies {
+        snapshot(Build) {}
+        artifacts(Build) {
+            artifactRules = "application.zip"
         }
     }
 })
@@ -71,9 +120,27 @@ object Build : BuildType({
 object PetclinicVcs : GitVcsRoot({
     name = "PetclinicVcs"
     url = "https://github.com/spring-projects/spring-petclinic.git"
-    branch = "main"
-    authMethod = password {
-        userName = "vaano94"
-        password = "credentialsJSON:c57c4a0d-1b85-4ce0-b4b6-d2dc8b51e099"
-    }
+    branch="refs/heads/main"
+    branchSpec=
+        """
+        +:refs/heads/main
+        +:refs/heads/master
+        +:refs/heads/(main)
+        +:refs/heads/feature/*
+        """.trimIndent()
 })
+
+fun cleanFiles(buildType: BuildType): BuildType {
+    if (buildType.features.items.find { feature -> feature.type == "swabra"} == null) {
+        buildType.features { swabra {  } }
+    }
+    return buildType
+}
+
+
+fun wrapWithFeature(buildType: BuildType, featureBlock: BuildFeatures.() -> Unit): BuildType {
+    buildType.features {
+        featureBlock()
+    }
+    return buildType
+}

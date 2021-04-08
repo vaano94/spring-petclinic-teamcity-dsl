@@ -30,8 +30,11 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 version = "2018.2"
 
 project {
+    name = "PetClinicBuild"
     vcsRoot(PetclinicVcs)
-    buildType(Build)
+    buildType(wrapWithFeature(Build) {
+        swabra {}
+        })
 }
 
 object Build : BuildType({
@@ -46,18 +49,32 @@ object Build : BuildType({
             goals = "clean package"
             dockerImage = "maven:3.6.0-jdk-8"
         }
+
     }
     triggers {
         vcs {
             groupCheckinsByCommitter = true
         }
     }
+    features { swabra {  } }
 })
 
 object PetclinicVcs : GitVcsRoot({
     name = "PetclinicVcs"
     url = "https://github.com/spring-projects/spring-petclinic.git"
+    branchSpec=
+        """
+        +:refs/heads/(main)
+        +:refs/heads/feature/*
+        """.trimIndent()
 })
+
+fun cleanFiles(buildType: BuildType): BuildType {
+    if (buildType.features.items.find { feature -> feature.type == "swabra"} == null) {
+        buildType.features { swabra {  } }
+    }
+    return buildType
+}
 
 
 fun wrapWithFeature(buildType: BuildType, featureBlock: BuildFeatures.() -> Unit): BuildType {

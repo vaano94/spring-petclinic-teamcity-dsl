@@ -81,8 +81,8 @@ object Build : BuildType({
                 BUILD_NO="%build.counter%"
                 echo "were in ${'$'}(pwd)"
                 
-                echo "Build is running on branch                 ${'$'}                BRANCH"
-                echo "Build count is currently at                ${'$'}                BUILD_NO"
+                echo "Build is running on branch ${'$'}BRANCH"
+                echo "Build count is currently at ${'$'}BUILD_NO"
             """.trimIndent()
         }
 
@@ -96,7 +96,7 @@ object Build : BuildType({
 
 object Publish: BuildType({
     name = "Publish"
-    artifactRules = "application.zip"
+    artifactRules = "*jar"
     steps {
         script {
             println("Publish step content")
@@ -115,7 +115,7 @@ object Publish: BuildType({
     dependencies {
         snapshot(Build) {}
         artifacts(Build) {
-            artifactRules = "application.zip"
+            artifactRules = "*jar"
         }
     }
 })

@@ -63,7 +63,7 @@ object Build : BuildType({
     vcs {
         branchFilter = """
             +:*
-            -:<default>
+            +:<default>
         """
         root(PetclinicVcs)
     }
@@ -93,7 +93,7 @@ object Publish: BuildType({
     vcs {
         branchFilter = """
             +:*
-            -:<default>
+            +:<default>
         """
         root(PetclinicVcs)
     }

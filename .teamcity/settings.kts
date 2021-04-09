@@ -76,7 +76,14 @@ object Build : BuildType({
             println("Renaming artifact")
             println("Base dir ${DslContext.baseDir}")
             println("Settings root ${DslContext.settingsRoot}")
-            scriptContent = "echo 'Script content' "
+            scriptContent = """
+                BRANCH=`echo %teamcity.build.branch% | sed 's|refs/heads/||g'`
+                BUILD_NO="%build.counter%"
+                echo "were in ${'$'}(pwd)"
+                
+                echo "Build is running on branch                 ${'$'}                BRANCH"
+                echo "Build count is currently at                ${'$'}                BUILD_NO"
+            """.trimIndent()
         }
 
     }
@@ -90,27 +97,17 @@ object Build : BuildType({
 object Publish: BuildType({
     name = "Publish"
     artifactRules = "application.zip"
-    vcs {
-        branchFilter = """
-            +:*
-            +:<default>
-        """
-        root(PetclinicVcs)
-    }
     steps {
         script {
             println("Publish step content")
             scriptContent = """
-                
-                BRANCH=`echo %teamcity.build.branch% | sed 's|refs/heads/||g'`
-                BUILD_NO="%build.counter%"
-                
-                echo "Build is running on branch                 ${'$'}                BRANCH"
-                echo "Build count is currently at                 ${'$'}                BUILD_NO"
-                
+                echo 'Creating artifacts directory'
                 mkdir -p ./artifacts/
-                find -name 'target' -type d | xargs -I{} find {} -name "*.jar" | xargs -I{} 
+                echo 'Finding created jar artifacts'
+                find -name 'target' -type d | xargs -I{} find {} -name "*.jar" | xargs -I{}
+                echo 'Copying found artifacts in a folder'
                 cp {} ./artifacts/
+                echo 'Content of artifacts folder'
                 ls -lah artifacts/
             """.trimIndent()
         }

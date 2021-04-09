@@ -102,13 +102,11 @@ object Publish: BuildType({
             println("Publish step content")
             scriptContent = """
                 echo 'Creating artifacts directory'
-                mkdir -p ./artifacts/
-                echo 'Finding created jar artifacts'
-                find -name 'target' -type d | xargs -I{} find {} -name "*.jar" | xargs -I{}
-                echo 'Copying found artifacts in a folder'
-                cp {} ./artifacts/
+                mkdir -p tmp/artifacts/
+                echo 'Finding created jar artifacts in target folder and moving to artifacts'
+                find -name 'target' -type d | xargs -I{} find {} -name "*.jar" | xargs -I {} cp {} tmp/artifacts/
                 echo 'Content of artifacts folder'
-                ls -lah artifacts/
+                ls -lah tmp/artifacts/
             """.trimIndent()
         }
     }
